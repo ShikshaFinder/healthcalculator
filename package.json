@@ -1,7 +1,7 @@
 {
-    "name": "bmi-calculator",
+    "name": "health-tracker",
     "version": "1.0.0",
-    "description": "BMI Calculator Web Application",
+    "description": "Comprehensive Health Tracking Application",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
