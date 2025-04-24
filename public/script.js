@@ -86,6 +86,10 @@ function initMedicationTracker() {
   const medicationList = document.getElementById("medicationList");
 
   loadMedications();
+  checkMissedDoses();
+
+  // Check for missed doses every minute
+  setInterval(checkMissedDoses, 60000);
 
   medicationForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -96,6 +100,8 @@ function initMedicationTracker() {
       frequency: document.getElementById("medFrequency").value,
       time: document.getElementById("medTime").value,
       createdAt: new Date().toISOString(),
+      lastTaken: null,
+      missedDoses: 0,
     };
 
     const medications = JSON.parse(localStorage.getItem("medications") || "[]");
@@ -113,21 +119,84 @@ function initMedicationTracker() {
     medicationList.innerHTML = medications
       .map((med) => {
         const medTime = new Date(`${today} ${med.time}`);
-        const isMissed = medTime < new Date();
+        const isMissed = medTime < new Date() && !med.lastTaken;
+        const isUpcoming = medTime > new Date() && !med.lastTaken;
 
         return `
-          <div class="medication-item ${isMissed ? "missed" : ""}">
+          <div class="medication-item ${isMissed ? "missed" : ""} ${
+          isUpcoming ? "upcoming" : ""
+        }">
             <h6>${med.name}</h6>
             <p>Dosage: ${med.dosage}</p>
             <p>Time: ${med.time}</p>
             <p>Frequency: ${med.frequency}</p>
-            ${isMissed ? '<span class="badge bg-warning">Missed</span>' : ""}
+            ${isMissed ? `<span class="badge bg-warning">Missed</span>` : ""}
+            ${isUpcoming ? `<span class="badge bg-info">Upcoming</span>` : ""}
+            ${
+              med.lastTaken
+                ? `<span class="badge bg-success">Taken at ${new Date(
+                    med.lastTaken
+                  ).toLocaleTimeString()}</span>`
+                : ""
+            }
+            <button class="btn btn-sm btn-success mt-2" onclick="markAsTaken('${
+              med.name
+            }')">Mark as Taken</button>
           </div>
         `;
       })
       .join("");
   }
+
+  function checkMissedDoses() {
+    const medications = JSON.parse(localStorage.getItem("medications") || "[]");
+    const today = new Date().toDateString();
+    let hasMissedDoses = false;
+
+    medications.forEach((med) => {
+      const medTime = new Date(`${today} ${med.time}`);
+      if (medTime < new Date() && !med.lastTaken) {
+        hasMissedDoses = true;
+        med.missedDoses = (med.missedDoses || 0) + 1;
+      }
+    });
+
+    if (hasMissedDoses) {
+      localStorage.setItem("medications", JSON.stringify(medications));
+      loadMedications();
+
+      // Show notification
+      if (Notification.permission === "granted") {
+        new Notification("Medication Reminder", {
+          body: "You have missed medication doses. Please check your medication list.",
+          icon: "/favicon.ico",
+        });
+      }
+    }
+  }
 }
+
+// Add this function to the global scope
+window.markAsTaken = function (medicationName) {
+  const medications = JSON.parse(localStorage.getItem("medications") || "[]");
+  const medication = medications.find((m) => m.name === medicationName);
+
+  if (medication) {
+    medication.lastTaken = new Date().toISOString();
+    localStorage.setItem("medications", JSON.stringify(medications));
+    loadMedications();
+  }
+};
+
+// Request notification permission when the page loads
+document.addEventListener("DOMContentLoaded", () => {
+  if (
+    Notification.permission !== "granted" &&
+    Notification.permission !== "denied"
+  ) {
+    Notification.requestPermission();
+  }
+});
 
 // Nutrition Tracker Section
 function initNutritionTracker() {
@@ -167,6 +236,60 @@ function initNutritionTracker() {
     updateWaterProgress();
   });
 
+  function loadMeals() {
+    const meals = JSON.parse(localStorage.getItem("meals") || "[]");
+    const today = new Date().toDateString();
+    const todayMeals = meals.filter(
+      (meal) => new Date(meal.createdAt).toDateString() === today
+    );
+
+    // Calculate total calories for today
+    const totalCalories = todayMeals.reduce(
+      (sum, meal) => sum + meal.calories,
+      0
+    );
+
+    // Update the meal list display
+    const mealList =
+      document.getElementById("mealList") ||
+      (() => {
+        const list = document.createElement("div");
+        list.id = "mealList";
+        mealForm.parentNode.appendChild(list);
+        return list;
+      })();
+
+    mealList.innerHTML = `
+      <h6 class="mt-3">Today's Meals (${totalCalories} calories)</h6>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Description</th>
+              <th>Calories</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${todayMeals
+              .map(
+                (meal) => `
+              <tr>
+                <td>${meal.type}</td>
+                <td>${meal.description}</td>
+                <td>${meal.calories}</td>
+                <td>${new Date(meal.createdAt).toLocaleTimeString()}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
   function updateWaterProgress() {
     const today = new Date().toDateString();
     const waterIntake = JSON.parse(localStorage.getItem("waterIntake") || "{}");
@@ -185,6 +308,11 @@ function initSymptomTracker() {
   const emojiRating = document.querySelector(".emoji-rating");
   const symptomChart = document.getElementById("symptomChart");
   let selectedSeverity = 3;
+
+  // Initialize emoji opacity
+  emojiRating.querySelectorAll("span").forEach((span) => {
+    span.style.opacity = span.dataset.value === "3" ? "1" : "0.5";
+  });
 
   loadSymptoms();
   initChart();
@@ -214,7 +342,58 @@ function initSymptomTracker() {
 
     loadSymptoms();
     updateChart();
+    symptomForm.reset();
   });
+
+  function loadSymptoms() {
+    const symptoms = JSON.parse(localStorage.getItem("symptoms") || "[]");
+    const today = new Date().toDateString();
+    const todaySymptoms = symptoms.filter(
+      (symptom) => new Date(symptom.createdAt).toDateString() === today
+    );
+
+    const symptomList =
+      document.getElementById("symptomList") ||
+      (() => {
+        const list = document.createElement("div");
+        list.id = "symptomList";
+        symptomForm.parentNode.appendChild(list);
+        return list;
+      })();
+
+    symptomList.innerHTML = `
+      <h6 class="mt-3">Today's Symptoms</h6>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Symptom</th>
+              <th>Severity</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${todaySymptoms
+              .map(
+                (symptom) => `
+              <tr>
+                <td>${symptom.type}</td>
+                <td>${getEmojiForSeverity(symptom.severity)}</td>
+                <td>${new Date(symptom.createdAt).toLocaleTimeString()}</td>
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function getEmojiForSeverity(severity) {
+    const emojis = ["😊", "🙂", "😐", "😕", "😫"];
+    return emojis[severity - 1] || "😐";
+  }
 
   function initChart() {
     const ctx = symptomChart.getContext("2d");

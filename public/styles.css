@@ -12,7 +12,7 @@ body {
 }
 
 .card-body {
-    padding: 2rem;
+    padding: 1.5rem;
 }
 
 .form-control {
@@ -21,10 +21,13 @@ body {
 }
 
 .btn-primary {
-    background-color: #007bff;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
 }
 
 #result {
@@ -51,10 +54,15 @@ body {
 .emoji-rating span {
     cursor: pointer;
     transition: transform 0.2s;
+    opacity: 0.5;
 }
 
 .emoji-rating span:hover {
     transform: scale(1.2);
+}
+
+.emoji-rating span.active {
+    opacity: 1;
 }
 
 .water-tracker {
@@ -63,21 +71,28 @@ body {
 
 .progress {
     height: 2rem;
+    margin-bottom: 1rem;
 }
 
 .progress-bar {
     background-color: #0d6efd;
     transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
 }
 
 #medicationList {
-    max-height: 300px;
+    max-height: 400px;
     overflow-y: auto;
 }
 
 .medication-item {
-    padding: 0.5rem;
+    padding: 1rem;
     border-bottom: 1px solid #dee2e6;
+    transition: background-color 0.3s;
 }
 
 .medication-item:last-child {
@@ -88,6 +103,14 @@ body {
     background-color: #fff3cd;
 }
 
+.medication-item.upcoming {
+    background-color: #e7f5ff;
+}
+
+.medication-item .badge {
+    margin-right: 0.5rem;
+}
+
 .symptom-chart {
     height: 300px;
 }
@@ -95,6 +118,11 @@ body {
 .table-responsive {
     max-height: 400px;
     overflow-y: auto;
+}
+
+#mealList,
+#symptomList {
+    margin-top: 1rem;
 }
 
 /* Custom scrollbar */
@@ -113,4 +141,25 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+/* Form styles */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+
+    .emoji-rating {
+        font-size: 1.5rem;
+    }
+
+    .progress {
+        height: 1.5rem;
+    }
 }
