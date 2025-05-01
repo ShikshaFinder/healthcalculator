@@ -44,11 +44,11 @@ function initBMICalculator() {
     localStorage.setItem("bmiHistory", JSON.stringify(history));
 
     resultDiv.innerHTML = `
-      <div class="alert alert-success">
-        <h4>Your BMI: ${bmi}</h4>
-        <p>Category: ${category}</p>
-      </div>
-    `;
+                    <div class="alert alert-success">
+                        <h4>Your BMI: ${bmi}</h4>
+                        <p>Category: ${category}</p>
+                    </div>
+                `;
 
     loadBMIHistory();
     bmiForm.reset();
@@ -60,14 +60,14 @@ function initBMICalculator() {
     historyBody.innerHTML = history
       .map(
         (record) => `
-          <tr>
-            <td>${record.bmi}</td>
-            <td>${record.category}</td>
-            <td>${record.weight} kg</td>
-            <td>${record.height} cm</td>
-            <td>${new Date(record.createdAt).toLocaleDateString()}</td>
-          </tr>
-        `
+                <tr>
+                    <td>${record.bmi}</td>
+                    <td>${record.category}</td>
+                    <td>${record.weight} kg</td>
+                    <td>${record.height} cm</td>
+                    <td>${new Date(record.createdAt).toLocaleDateString()}</td>
+                </tr>
+            `
       )
       .join("");
   }
